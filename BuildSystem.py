@@ -6,14 +6,179 @@ import torch
 from torchvision import transforms
 import timm
 from simhash import Simhash
+import bitarray 
+import random
+import mmh3
 import faiss
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
+
+# ================================
+# 1. HashTable
+# ================================
+
+class HashTableIndex:
+    # Collision sol: Linear probing
+    def __init__(self, size = 1000):
+        self.size = size
+        self.table = [None] * size # create 1000 buckets, (key, [list_of_values])
+
+    def _hash(self,key):
+        return hash(key) % self.size
+    
+    def add(self, key, value):
+        idx = self._hash(key)
+        while self.table[idx] is not None:
+            stored_key, store_values = self.table[idx]
+            # check existence of key
+            if stored_key == key:
+                store_values.append(value)
+                return
+            
+            # different key -> collision, linear probing
+            idx = (idx + 1) % self.size
+
+        self.table[idx] = (key, [value])
+
+    def query(self, key):
+        # Take all values corresponding to key
+        idx = self._hash(key)
+        start = idx
+        while self.table[idx] is not None:
+            stored_key, stored_values = self.table[idx]
+            if stored_key == key:
+                return stored_values
+            idx = (idx + 1) % self.size
+            if idx == start:  # quay vòng full table
+                break
+        return None
+
+# ================================
+# 2. Bloom Filter
+# ================================
+
+class BloomFilterIndex:
+    def __init__(self, size=1000, hash_count=3):
+        self.size = size                 # length bitarray
+        self.hash_count = hash_count     
+        self.bit_array = bitarray.bitarray(size)
+        self.bit_array.setall(0)         # initialize = 0
+        self.items = {}                  # keep mapping id -> item (for comparing)
+
+    def add(self, item, item_id):
+        # change to string
+        if isinstance(item, np.ndarray):
+            item_str = " ".join(map(str, item))
+        else:
+            item_str = str(item)
+
+        self.items[item_id] = item_str
+        for i in range(self.hash_count):
+            # hash many times -> increase accuracy
+            idx = mmh3.hash(str(item), i) % self.size 
+            self.bit_array[idx] = 1
+    
+    def query(self, item):
+        if isinstance(item, np.ndarray):
+            item_str = " ".join(map(str, item))
+        else:
+            item_str = str(item)
+
+        for i in range(self.hash_count):
+            idx = mmh3.hash(str(item), i) % self.size
+            if self.bit_array[idx] == 0:
+                return False
+        return True
+
+# ================================
+# 3. SimHash
+# ================================
+
+class SimhashIndex:
+    def __init__(self, hash_size=64):
+        self.hash_size = hash_size
+        self.hashes = {}  # id -> hash
+    
+    def _simhash(self, features):
+        bits = [0] * self.hash_size
+        for i, val in enumerate(features):
+            h = hash(str(i)) % self.hash_size
+            for b in range(self.hash_size):
+                if (h >> b) & 1:
+                    bits[b] += val
+                else:
+                    bits[b] -= val
+    
+    def _simhash(self, features):
+        bits = [0] * self.hash_size
+        for i, val in enumerate(features):
+            h = hash(str(i)) % self.hash_size
+            for b in range(self.hash_size):
+                if (h >> b) & 1:
+                    bits[b] += val
+                else:
+                    bits[b] -= val
+        fingerprint = 0
+        for b in range(self.hash_size):
+            if bits[b] > 0:
+                fingerprint |= 1 << b
+        return fingerprint
+    
+    def add(self, features, item_id):
+        h = self._simhash(features)
+        self.hashes[item_id] = h
+
+    def query(self, features, threshold=3):
+        q_hash = self._simhash(features)
+        results = []
+        for item_id, h in self.hashes.items():
+            dist = bin(q_hash ^ h).count("1")
+            if dist <= threshold:
+                results.append((item_id, dist))
+        return results
+    
+# ================================
+# 4. MinHash
+# ================================   
+class MinhashIndex:
+    def __init__(self, num_hashes=100, max_val=2**32-1):
+        self.num_hashes = num_hashes
+        self.max_val = max_val
+        # create many hash functions, especially pair (a,b)
+        self.hash_funcs = [
+            (random.randint(1, max_val), random.randint(0, max_val))
+            for _ in range(num_hashes)
+        ]
+        self.signatures = {}  # Dict: id -> signature
+
+    def _signature(self, shingles):
+        sig = []
+        for a, b in self.hash_funcs:
+            min_hash = min(((a * x + b) % self.max_val) for x in shingles)
+            sig.append(min_hash)
+        return sig
+
+    def add(self, shingles, item_id):
+        sig = self._signature(shingles)
+        self.signatures[item_id] = sig
+
+    def query(self, shingles, threshold=0.8):
+        q_sig = self._signature(shingles)
+        results = []
+        for item_id, sig in self.signatures.items():
+            matches = sum(1 for i in range(self.num_hashes) if sig[i] == q_sig[i]) # number of same match
+            score = matches / self.num_hashes
+            if score >= threshold:
+                results.append((item_id, score))
+        return results
+
+
+
 # Config
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-IMAGE_FOLDER = Path("images")
+IMAGE_FOLDER = Path("D:/VSCODE/Python/DSA-TN-Group02/images")
 HASH_SIZE = 64
 K_NEAREST = 3 # 3 nearest by FAISS
 
@@ -21,92 +186,138 @@ K_NEAREST = 3 # 3 nearest by FAISS
 
 def get_model():
     model = timm.create_model("resnet18", pretrained=True, num_classes = 0)
-    model.to(DEVICE).eval()
+    model.to(DEVICE).eval() # move model to CPU/GPU, eval(): turn off dropout, batchnorm and use running stats
     return model
 
 def get_transform():
     transform = transforms.Compose([
+        # Normalize
         transforms.Resize((224,224)), # form of ResNet
-        transforms.ToTensor(), # transform from PIL image(0-255, H x W x C) ->torch.FloatTensor (0-1, C x H x W)
-        transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225]) # (x - mean) / std
+        transforms.ToTensor(), # transform from PIL image (0-255) (H x W x C) ->torch.FloatTensor (0-1) (C x H x W)
+        transforms.Normalize(mean = [0.485,0.456,0.406], std = [0.229,0.224,0.225]) # (x - mean) / std
+       
     ])
     return transform
 
 def feature_extract(model, transform, img_path):
-    img = Image.open(img_path).convert("RGB")
-    x = transform(img).unsqueeze(0).to(DEVICE) # [B, C, H, W]
-    with torch.no_grad():
-        feat = model(x)
-    return feat.cpu().numpy().flatten()
-
-# Hashing (SimHash)
-def simhash_vector(vector, hash_size = HASH_SIZE):
-    vector_str = " ".join([str(v) for v in vector])
-    return Simhash(vector_str, f = hash_size).value # value of binary sequence
+    img = Image.open(img_path).convert("RGB") # Guarantee the img has 3 channel
+    x = transform(img).unsqueeze(0).to(DEVICE) # [B, C, H, W], add batch dimension
+    with torch.no_grad(): # turn off gradient -> save time and memory(inference)
+        feat = model(x) # return feature vector (512-d for ResNet18)
+    return feat.cpu().numpy().flatten() # bring tensor to CPU, transform to numpy and flatten to 1D vector -> use for hash/FAISS
 
 # FAISS
 def build_faiss_index(features):
     d = features.shape[1]
-    index = faiss.IndexFlatL2(d)
-    index.add(features)
+    index = faiss.IndexFlatL2(d) # index brute-force theo L2 distance: Euclide
+    index.add(features) # load all feature to index
     return index
 
 # Grouping
-def group_by_faiss(features, image_paths, threshold=50):
-    index = faiss.IndexFlatL2(features.shape[1])
-    index.add(features)
-    groups = [] 
+def group_by_hash_faiss(features, image_paths, hash_index, hash_type,
+                        threshold_hash=3, threshold_faiss_sq=50):
+    n = len(features)
+    groups = []
     visited = set()
-    for i, feat in enumerate(features):
+
+    # create mapping name -> index to avoid ValueError
+    name_to_idx = {p.name: i for i, p in enumerate(image_paths)}
+
+    for i in range(n):
         if i in visited:
             continue
-        D, I = index.search(feat.reshape(1, -1), len(features))
-        group = []
-        for dist, idx in zip(D[0], I[0]):
-            if dist <= threshold:
-                group.append(image_paths[idx])
-                visited.add(idx)
+        group = [image_paths[i]]
+        visited.add(i)
+        fi = features[i]
+        img_id_i = image_paths[i].name
+
+        candidate_ids = []
+        # Lấy candidate từ hash
+        if hash_type == "simhash":
+            results = hash_index.query(fi, threshold=threshold_hash)
+            candidate_ids = [r[0] for r in results]
+        elif hash_type == "minhash":
+            results = hash_index.query(fi, threshold=0.8)
+            candidate_ids = [r[0] for r in results]
+        elif hash_type == "hashtable":
+            vals = hash_index.query(img_id_i)
+            ccandidate_ids = [v for v in vals] if vals else []
+        elif hash_type == "bloom":
+            if hash_index.query(img_id_i):
+                candidate_ids = [p.name for p in image_paths]  # all images are candidates
+            else:
+                candidate_ids = []
+
+        # Use FAISS (or squared L2) to refine
+        for j in candidate_ids:
+            # convert name -> index
+            idx_j = name_to_idx[j]
+
+            if idx_j in visited:
+                continue
+            fj = features[idx_j]
+            dist_sq = float(np.dot(fi - fj, fi - fj))
+            if dist_sq <= threshold_faiss_sq:
+                group.append(image_paths[idx_j])
+                visited.add(idx_j)
         groups.append(group)
     return groups
 
 
 # Pick the representative
 def select_representatives(groups):
+    # Size
     def get_size(img_path):
         img = Image.open(img_path)
         return img.width * img.height
+    # Sharpness
+    def sharpness_score(img_path):
+        import cv2
+        img = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
+        return cv2.Laplacian(img, cv2.CV_64F).var()
+    
     representatives = []
     for group in groups:  # group is a list of image paths
-        best_path = max(group, key=get_size)
+        best_path = max(group, key=sharpness_score)
         representatives.append(best_path)
     return representatives
 
 # Visualize
 
-def visualize_groups(groups, max_cols=3):
+def visualize_groups(groups, fig_width=16, fig_height=12, max_cols=4):
+    """
+    Visualize image groups in a fixed figure size.
+    
+    Args:
+        groups: list of list of Path objects
+        fig_width: width of figure in inches
+        fig_height: height of figure in inches
+        max_cols: max number of columns per row
+    """
     import math
+
     num_groups = len(groups)
     print(f"Tổng số nhóm: {num_groups}")
 
+    # Chọn số cột cố định tối đa, sau đó tính số hàng
     cols = min(max_cols, num_groups)
     rows = math.ceil(num_groups / cols)
 
-    fig, axes = plt.subplots(
-        nrows=rows, ncols=cols,
-        figsize=(cols * 4, rows * 4)
-    )
-
+    # Tạo figure cố định
+    fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(fig_width, fig_height))
+    
     # Chuẩn hóa axes thành list
     if rows * cols == 1:
         axes = [axes]
     else:
         axes = axes.flatten()
 
+    # Vẽ từng nhóm
     for ax, items in zip(axes, groups):
         rep_img = Image.open(items[0])
         ax.imshow(rep_img)
         ax.axis("off")
-        ax.set_title(f"Nhóm {groups.index(items)+1} - {len(items)} ảnh", fontsize=10)
+        ax.set_title(f"Group {groups.index(items)+1}: {len(items)} ảnh", fontsize=10)
 
     # Ẩn các axes dư thừa
     for ax in axes[len(groups):]:
@@ -125,43 +336,55 @@ def main():
         image_paths.extend(IMAGE_FOLDER.glob(ext))
 
     if not image_paths:
-        print("Không tìm thấy ảnh trong folder images/")
+        print("Not found in folder images/")
         return
-    print(f"Tổng số ảnh: {len(image_paths)}")
+    print(f"Number of images: {len(image_paths)}")
 
     # 2. Load model & transform
     model = get_model()
     transform = get_transform()
 
     # 3. Extracting feature
-    print("Đang trích xuất đặc trưng...")
+    print("Extracting...")
     features = np.array([feature_extract(model, transform, p) for p in image_paths], dtype="float32")
     print("Shape features:", features.shape)
 
-    # 4. Hash by SimHash
-    print("Đang tính hash...")
-    hashes = [simhash_vector(f) for f in features]
+    # 4. Hashing
+    hash_type = "minhash"  # "hashtable", "bloom", "simhash", "minhash"
 
-    # 5. find k_nearest bằng FAISS (exp for the first img)
-    index = build_faiss_index(features)
-    query = features[0].reshape(1, -1)
-    D, I = index.search(query, K_NEAREST)
-    print("FAISS - ảnh gần nhất cho ảnh đầu tiên:")
-    for rank, idx in enumerate(I[0]):
-        print(f"{rank+1}: {image_paths[idx].name} (distance={D[0][rank]:.4f})")
+    if hash_type not in ["hashtable", "bloom", "simhash", "minhash"]:
+        raise ValueError(f"hash_type {hash_type} không hợp lệ")
 
-    # 6. grouping
-    groups = group_by_faiss(features, image_paths)
-    print(f"Tổng số nhóm trùng lặp: {len(groups)}")
+    if hash_type == "hashtable":
+        index = HashTableIndex()
+    elif hash_type == "bloom":
+        index = BloomFilterIndex(size=5000, hash_count=5)
+    elif hash_type == "simhash":
+        index = SimhashIndex(hash_size=HASH_SIZE)
+    elif hash_type == "minhash":
+        index = MinhashIndex(num_hashes=100)
 
-    # 7. Choose representative
+
+    for idx, feat in enumerate(features):
+        img_id = image_paths[idx].name
+        if hash_type in ["simhash", "minhash", "bloom"]:
+            index.add(feat, img_id)
+        else:  # hashtable
+            index.add(img_id, feat)
+
+    # 5. grouping
+    #groups = group_by_faiss(features, image_paths)
+    groups = group_by_hash_faiss(features, image_paths, index, hash_type)
+    print(f"Total duplicate groups: {len(groups)}")
+
+    # 6. Choose representative
     representatives = select_representatives(groups)
-    print(f"Tổng số ảnh đại diện: {len(representatives)}")
-    print("Ảnh đại diện:", [p.name for p in representatives])
+    print(f"Total representatives: {len(representatives)}")
+    print("Representative:", [p.name for p in representatives])
 
     # 8. Visualize by matplotlib
-    print("Đang trực quan hóa các nhóm ảnh...")
-    visualize_groups(groups)
+    print("Visualizing...")
+    visualize_groups(groups, max_cols=len(groups))
 
 if __name__ == "__main__":
     main()
