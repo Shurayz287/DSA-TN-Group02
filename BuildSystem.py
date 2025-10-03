@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from pathlib import Path 
 from PIL import Image
 from collections import defaultdict
@@ -50,7 +51,7 @@ class HashTableIndex:
             if stored_key == key:
                 return stored_values
             idx = (idx + 1) % self.size
-            if idx == start:  # quay vòng full table
+            if idx == start:  # break if full table
                 break
         return None
 
@@ -60,36 +61,32 @@ class HashTableIndex:
 
 class BloomFilterIndex:
     def __init__(self, size=1000, hash_count=3):
-        self.size = size                 # length bitarray
-        self.hash_count = hash_count     
+        self.size = size
+        self.hash_count = hash_count
         self.bit_array = bitarray.bitarray(size)
-        self.bit_array.setall(0)         # initialize = 0
-        self.items = {}                  # keep mapping id -> item (for comparing)
+        self.bit_array.setall(0)  # initialize all bits to 0
 
-    def add(self, item, item_id):
-        # change to string
+    def _item_to_str(self, item):
+        # convert item (vector, number, string) to string for hashing
         if isinstance(item, np.ndarray):
-            item_str = " ".join(map(str, item))
+            return " ".join(map(str, item))
         else:
-            item_str = str(item)
+            return str(item)
 
-        self.items[item_id] = item_str
+    def add(self, item):
+        item_str = self._item_to_str(item)
         for i in range(self.hash_count):
-            # hash many times -> increase accuracy
-            idx = mmh3.hash(str(item), i) % self.size 
+            idx = mmh3.hash(item_str, i) % self.size
             self.bit_array[idx] = 1
-    
-    def query(self, item):
-        if isinstance(item, np.ndarray):
-            item_str = " ".join(map(str, item))
-        else:
-            item_str = str(item)
 
+    def query(self, item):
+        item_str = self._item_to_str(item)
         for i in range(self.hash_count):
-            idx = mmh3.hash(str(item), i) % self.size
+            idx = mmh3.hash(item_str, i) % self.size
             if self.bit_array[idx] == 0:
                 return False
         return True
+
 
 # ================================
 # 3. SimHash
@@ -215,13 +212,13 @@ def build_faiss_index(features):
 
 # Grouping
 def group_by_hash_faiss(features, image_paths, hash_index, hash_type,
-                        threshold_hash=3, threshold_faiss_sq=50):
+                        threshold_hash=5, threshold_faiss_sq=60):
     n = len(features)
     groups = []
     visited = set()
 
     # create mapping name -> index to avoid ValueError
-    name_to_idx = {p.name: i for i, p in enumerate(image_paths)}
+    img_to_idx = {p: i for i, p in enumerate(image_paths)}
 
     for i in range(n):
         if i in visited:
@@ -229,7 +226,7 @@ def group_by_hash_faiss(features, image_paths, hash_index, hash_type,
         group = [image_paths[i]]
         visited.add(i)
         fi = features[i]
-        img_id_i = image_paths[i].name
+        img_id_i = image_paths[i]
 
         candidate_ids = []
         # Lấy candidate từ hash
@@ -237,7 +234,7 @@ def group_by_hash_faiss(features, image_paths, hash_index, hash_type,
             results = hash_index.query(fi, threshold=threshold_hash)
             candidate_ids = [r[0] for r in results]
         elif hash_type == "minhash":
-            results = hash_index.query(fi, threshold=0.8)
+            results = hash_index.query(fi, threshold=0.5)
             candidate_ids = [r[0] for r in results]
         elif hash_type == "hashtable":
             vals = hash_index.query(img_id_i)
@@ -251,7 +248,7 @@ def group_by_hash_faiss(features, image_paths, hash_index, hash_type,
         # Use FAISS (or squared L2) to refine
         for j in candidate_ids:
             # convert name -> index
-            idx_j = name_to_idx[j]
+            idx_j = img_to_idx[j]
 
             if idx_j in visited:
                 continue
@@ -284,7 +281,7 @@ def select_representatives(groups):
 
 # Visualize
 
-def visualize_groups(groups, fig_width=16, fig_height=12, max_cols=4):
+def visualize_groups(groups, fig_width=8, fig_height=6, max_cols=4):
     """
     Visualize image groups in a fixed figure size.
     
@@ -294,32 +291,30 @@ def visualize_groups(groups, fig_width=16, fig_height=12, max_cols=4):
         fig_height: height of figure in inches
         max_cols: max number of columns per row
     """
-    import math
-
     num_groups = len(groups)
-    print(f"Tổng số nhóm: {num_groups}")
+    print(f"Total groups: {num_groups}")
 
-    # Chọn số cột cố định tối đa, sau đó tính số hàng
+    # Fix number of cols, calculate the number of rows
     cols = min(max_cols, num_groups)
     rows = math.ceil(num_groups / cols)
 
-    # Tạo figure cố định
+    # Create fix figure
     fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(fig_width, fig_height))
     
-    # Chuẩn hóa axes thành list
+    # Normalized axes to list
     if rows * cols == 1:
         axes = [axes]
     else:
         axes = axes.flatten()
 
-    # Vẽ từng nhóm
+    # Create each group
     for ax, items in zip(axes, groups):
         rep_img = Image.open(items[0])
         ax.imshow(rep_img)
         ax.axis("off")
         ax.set_title(f"Group {groups.index(items)+1}: {len(items)} ảnh", fontsize=10)
 
-    # Ẩn các axes dư thừa
+    # Hidden sub axes 
     for ax in axes[len(groups):]:
         ax.axis("off")
 
@@ -350,7 +345,7 @@ def main():
     print("Shape features:", features.shape)
 
     # 4. Hashing
-    hash_type = "minhash"  # "hashtable", "bloom", "simhash", "minhash"
+    hash_type = "simhash"  # "hashtable", "bloom", "simhash", "minhash"
 
     if hash_type not in ["hashtable", "bloom", "simhash", "minhash"]:
         raise ValueError(f"hash_type {hash_type} không hợp lệ")
@@ -366,11 +361,18 @@ def main():
 
 
     for idx, feat in enumerate(features):
-        img_id = image_paths[idx].name
-        if hash_type in ["simhash", "minhash", "bloom"]:
+        img_id = image_paths[idx]  
+        
+        if hash_type in ["simhash", "minhash"]:
             index.add(feat, img_id)
-        else:  # hashtable
-            index.add(img_id, feat)
+        elif hash_type == "hashtable":
+            key = tuple(feat)  
+            index.add(key, img_id)
+        elif hash_type == "bloom":
+            key = tuple(feat) 
+            # Bloom Filter only, need item
+            index.add(feat)
+
 
     # 5. grouping
     #groups = group_by_faiss(features, image_paths)
