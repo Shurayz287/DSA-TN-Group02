@@ -100,17 +100,7 @@ class SimhashIndex:
     def _simhash(self, features):
         bits = [0] * self.hash_size
         for i, val in enumerate(features):
-            h = hash(str(i)) % self.hash_size
-            for b in range(self.hash_size):
-                if (h >> b) & 1:
-                    bits[b] += val
-                else:
-                    bits[b] -= val
-    
-    def _simhash(self, features):
-        bits = [0] * self.hash_size
-        for i, val in enumerate(features):
-            h = hash(str(i)) % self.hash_size
+            h = mmh3.hash64(f"{i}:{round(val,4)}")[0] & ((1 << self.hash_size) - 1)
             for b in range(self.hash_size):
                 if (h >> b) & 1:
                     bits[b] += val
@@ -126,7 +116,7 @@ class SimhashIndex:
         h = self._simhash(features)
         self.hashes[item_id] = h
 
-    def query(self, features, threshold=3):
+    def query(self, features, threshold=8):
         q_hash = self._simhash(features)
         results = []
         for item_id, h in self.hashes.items():
@@ -139,15 +129,21 @@ class SimhashIndex:
 # 4. MinHash
 # ================================   
 class MinhashIndex:
-    def __init__(self, num_hashes=100, max_val=2**32-1):
+    def __init__(self, num_hashes=100, max_val=2**32-1, top_k=50):
         self.num_hashes = num_hashes
         self.max_val = max_val
+        self.top_k = top_k 
         # create many hash functions, especially pair (a,b)
         self.hash_funcs = [
             (random.randint(1, max_val), random.randint(0, max_val))
             for _ in range(num_hashes)
         ]
         self.signatures = {}  # Dict: id -> signature
+    
+    # take top k index max -> convert to int instead of float to work
+    def vector_to_shingles(self, vec):
+        topk_idx = np.argsort(vec)[-self.top_k:]  
+        return set(topk_idx)
 
     def _signature(self, shingles):
         sig = []
@@ -156,11 +152,13 @@ class MinhashIndex:
             sig.append(min_hash)
         return sig
 
-    def add(self, shingles, item_id):
+    def add(self, vec, item_id):
+        shingles = self.vector_to_shingles(vec)
         sig = self._signature(shingles)
         self.signatures[item_id] = sig
 
-    def query(self, shingles, threshold=0.8):
+    def query(self, vec, threshold=0.4):
+        shingles = self.vector_to_shingles(vec)
         q_sig = self._signature(shingles)
         results = []
         for item_id, sig in self.signatures.items():
@@ -177,7 +175,6 @@ class MinhashIndex:
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 IMAGE_FOLDER = Path("D:/VSCODE/Python/DSA-TN-Group02/images")
 HASH_SIZE = 64
-K_NEAREST = 3 # 3 nearest by FAISS
 
 # Feature extracting
 
@@ -203,16 +200,10 @@ def feature_extract(model, transform, img_path):
         feat = model(x) # return feature vector (512-d for ResNet18)
     return feat.cpu().numpy().flatten() # bring tensor to CPU, transform to numpy and flatten to 1D vector -> use for hash/FAISS
 
-# FAISS
-def build_faiss_index(features):
-    d = features.shape[1]
-    index = faiss.IndexFlatL2(d) # index brute-force theo L2 distance: Euclide
-    index.add(features) # load all feature to index
-    return index
 
 # Grouping
 def group_by_hash_faiss(features, image_paths, hash_index, hash_type,
-                        threshold_hash=5, threshold_faiss_sq=60):
+                        threshold_hash=12, threshold_faiss_sq=1.2):
     n = len(features)
     groups = []
     visited = set()
@@ -231,14 +222,14 @@ def group_by_hash_faiss(features, image_paths, hash_index, hash_type,
         candidate_ids = []
         # Lấy candidate từ hash
         if hash_type == "simhash":
-            results = hash_index.query(fi, threshold=threshold_hash)
+            results = hash_index.query(fi, threshold=31)
             candidate_ids = [r[0] for r in results]
         elif hash_type == "minhash":
-            results = hash_index.query(fi, threshold=0.5)
+            results = hash_index.query(fi, threshold=0.3)
             candidate_ids = [r[0] for r in results]
         elif hash_type == "hashtable":
             vals = hash_index.query(img_id_i)
-            ccandidate_ids = [v for v in vals] if vals else []
+            candidate_ids = [v for v in vals] if vals else []
         elif hash_type == "bloom":
             if hash_index.query(img_id_i):
                 candidate_ids = [p.name for p in image_paths]  # all images are candidates
@@ -246,27 +237,30 @@ def group_by_hash_faiss(features, image_paths, hash_index, hash_type,
                 candidate_ids = []
 
         # Use FAISS (or squared L2) to refine
-        for j in candidate_ids:
-            # convert name -> index
-            idx_j = img_to_idx[j]
+        if candidate_ids:
+            cand_idx = [img_to_idx[j] for j in candidate_ids if img_to_idx[j] not in visited]
 
-            if idx_j in visited:
-                continue
-            fj = features[idx_j]
-            dist_sq = float(np.dot(fi - fj, fi - fj))
-            if dist_sq <= threshold_faiss_sq:
-                group.append(image_paths[idx_j])
-                visited.add(idx_j)
+            if cand_idx:  # when meet unvisited candidates
+                cand_feats = np.array([features[j] for j in cand_idx], dtype="float32")
+
+                # create FAISS index
+                index_bucket = faiss.IndexFlatL2(cand_feats.shape[1])
+                index_bucket.add(cand_feats)
+
+                # find in bucket
+                D, I = index_bucket.search(fi.reshape(1, -1).astype("float32"), len(cand_idx))
+
+                for d, idx_local in zip(D[0], I[0]):
+                    if d <= threshold_faiss_sq:
+                        real_idx = cand_idx[idx_local]
+                        group.append(image_paths[real_idx])
+                        visited.add(real_idx)
         groups.append(group)
     return groups
 
 
 # Pick the representative
 def select_representatives(groups):
-    # Size
-    def get_size(img_path):
-        img = Image.open(img_path)
-        return img.width * img.height
     # Sharpness
     def sharpness_score(img_path):
         import cv2
@@ -344,8 +338,11 @@ def main():
     features = np.array([feature_extract(model, transform, p) for p in image_paths], dtype="float32")
     print("Shape features:", features.shape)
 
+    # Normalize features
+    features = features / np.linalg.norm(features, axis=1, keepdims=True)
+
     # 4. Hashing
-    hash_type = "simhash"  # "hashtable", "bloom", "simhash", "minhash"
+    hash_type = "minhash"  # "hashtable", "bloom", "simhash", "minhash"
 
     if hash_type not in ["hashtable", "bloom", "simhash", "minhash"]:
         raise ValueError(f"hash_type {hash_type} không hợp lệ")
