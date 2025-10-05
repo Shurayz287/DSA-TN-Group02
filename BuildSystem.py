@@ -2,11 +2,9 @@ import numpy as np
 import math
 from pathlib import Path 
 from PIL import Image
-from collections import defaultdict
 import torch 
 from torchvision import transforms
 import timm
-from simhash import Simhash
 import bitarray 
 import random
 import mmh3
