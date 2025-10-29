@@ -152,21 +152,17 @@ def main(image_folder):
 
     print(f"After remove absolute duplicates, remaining {len(unique_images)} valid images.\n")
 
-    # Bước 2: Trích đặc trưng bằng ResNet50
     embeddings, valid_files = extract_embeddings_cv2(unique_images, batch_size=32)
     print(f"Number of valid images: {len(valid_files)}")
 
-    # Bước 3: Gom nhóm bằng FAISS
     groups, representatives = faiss_group_duplicate(embeddings, valid_files, distance_threshold=0.5, k_neighbors=5)
     print(f"Numbers of nearly duplicate groups: {len(groups)}")
     print(f"Number of remaining images: {len(representatives)}")
 
-    # In 5 nhóm đầu tiên
     for idx, g in enumerate(groups[:5]):
         rep = representatives[idx]
         print(f"\nGroup {idx + 1}: representative = {rep.name}, number of image = {len(g)}")
 
-    # Bước 4: Lưu ảnh sạch
     output_folder = image_folder / "cleaned"
     output_folder.mkdir(exist_ok=True)
     for f in representatives:
