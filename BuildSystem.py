@@ -184,6 +184,7 @@ def get_model():
 def get_transform():
     transform = transforms.Compose([
         # Normalize
+        
         transforms.Resize((224,224)), # form of ResNet
         transforms.ToTensor(), # transform from PIL image (0-255) (H x W x C) ->torch.FloatTensor (0-1) (C x H x W)
         transforms.Normalize(mean = [0.485,0.456,0.406], std = [0.229,0.224,0.225]) # (x - mean) / std
@@ -201,7 +202,7 @@ def feature_extract(model, transform, img_path):
 
 # Grouping
 def group_by_hash_faiss(features, image_paths, hash_index, hash_type,
-                        threshold_hash=12, threshold_faiss_sq=1.2):
+                        threshold_hash=12, threshold_faiss_sq=0.7):
     n = len(features)
     groups = []
     visited = set()
@@ -226,7 +227,7 @@ def group_by_hash_faiss(features, image_paths, hash_index, hash_type,
             results = hash_index.query(fi, threshold=0.3)
             candidate_ids = [r[0] for r in results]
         elif hash_type == "hashtable":
-            vals = hash_index.query(img_id_i)
+            vals = hash_index.query(tuple(fi))
             candidate_ids = [v for v in vals] if vals else []
         elif hash_type == "bloom":
             if hash_index.query(img_id_i):
@@ -340,7 +341,7 @@ def main():
     features = features / np.linalg.norm(features, axis=1, keepdims=True)
 
     # 4. Hashing
-    hash_type = "minhash"  # "hashtable", "bloom", "simhash", "minhash"
+    hash_type = "simhash"  # "hashtable", "bloom", "simhash", "minhash"
 
     if hash_type not in ["hashtable", "bloom", "simhash", "minhash"]:
         raise ValueError(f"hash_type {hash_type} không hợp lệ")
