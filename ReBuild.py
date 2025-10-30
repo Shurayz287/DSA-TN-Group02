@@ -14,7 +14,7 @@ from simhash import Simhash
 
 # Config
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-IMAGE_FOLDER = Path("D:/VSCODE/Python/DSA-TN-Group02/image_test_dataset")
+IMAGE_FOLDER = Path("D:/VSCODE/Python/DSA-TN-Group02/DesSrc")
 
 # Workflow
 def get_model():
@@ -171,7 +171,7 @@ def simhash_group_duplicate(image_paths, threshold = 22):
 
 
 # FAISS - FILTER
-def faiss_group_duplicate(embeddings, filenames, distance_threshold = 0.5, k_neighbors = 10):
+def faiss_group_duplicate(embeddings, filenames, distance_threshold = 0.6, k_neighbors = 10):
     # - embeddings: numpy array (n, d)
     # - filenames: list Path
     # - distance_threshold: cosine similarity threshold
@@ -228,7 +228,7 @@ def main(image_folder, method = "faiss"):
     if method == "faiss":
         embeddings, valid_files = extract_embeddings_cv2(unique_images, batch_size=32)
         print(f"Number of valid images: {len(valid_files)}")
-        groups, representatives = faiss_group_duplicate(embeddings, valid_files, distance_threshold=0.5, k_neighbors=10)
+        groups, representatives = faiss_group_duplicate(embeddings, valid_files, distance_threshold=0.6, k_neighbors=10)
     elif method == "simhash":
         groups, representatives = simhash_group_duplicate(unique_images, threshold=22)
 
