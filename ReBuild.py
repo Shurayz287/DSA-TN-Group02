@@ -197,7 +197,7 @@ def faiss_group_duplicate(embeddings, filenames, distance_threshold = 0.6, k_nei
             if j in visited:
                 continue
             sim = D[i, j_idx + 1]
-            if sim >= 1 - distance_threshold:
+            if sim >= distance_threshold:
                 group.append(filenames[j])
                 visited.add(j)
         # Choose representatives
@@ -250,4 +250,4 @@ def main(image_folder, method = "faiss"):
     return groups, representatives
 # Running pipline
 if __name__ == "__main__":
-    groups, representatives = main(IMAGE_FOLDER, method ="simhash")
+    groups, representatives = main(IMAGE_FOLDER, method ="faiss")
