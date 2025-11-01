@@ -238,7 +238,7 @@ def main(image_folder, method = "faiss"):
 
     for idx, g in enumerate(groups[:5]):
         rep = representatives[idx]
-        print(f"\nGroup {idx + 1}: representative = {rep.name}, number of image = {len(g)}")
+        print(f"\nCluster {idx + 1}: representative = {rep.name}, number of image = {len(g)}")
 
     output_folder = image_folder / "cleaned"
     output_folder.mkdir(exist_ok=True)
