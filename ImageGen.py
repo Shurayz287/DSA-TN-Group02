@@ -7,7 +7,7 @@ import numpy as np
 import os
 from pathlib import Path
 
-# Rename files
+# --- Rename images sequentially ---
 def rename_images_in_folder(folder_path, prefix="fl"):
     folder = Path(folder_path)
     image_files = sorted(
@@ -20,7 +20,7 @@ def rename_images_in_folder(folder_path, prefix="fl"):
         new_name = f"{prefix}{idx}{file.suffix.lower()}"
         new_path = folder / new_name
 
-        # tránh trùng tên (nếu file đã tồn tại)
+        # Avoid overwriting if the target file already exists
         if new_path.exists():
             print(f"Skipping {new_name} (already exists)")
             continue
@@ -28,41 +28,38 @@ def rename_images_in_folder(folder_path, prefix="fl"):
         file.rename(new_path)
         print(f"Renamed: {file.name} → {new_name}")
 
-    print("✅ Done renaming!")
+    print("✅ Done renaming all images!")
 
-rename_images_in_folder("D:\VSCODE\Python\DSA-TN-Group02\OriginalSrc")
+# Run renaming
+rename_images_in_folder("D:\\VSCODE\\Python\\DSA-TN-Group02\\OriginalSrc")
 
-# --- Cấu hình ---
-input_folder = "OriginalSrc"        # 📂 Thư mục chứa ảnh gốc (ví dụ: 'data/original')
-output_folder = "DesSrc"   # 📂 Thư mục chứa ảnh sau khi augment
-num_aug_per_image = 10               # Số ảnh augment cho mỗi ảnh gốc
+# --- Configuration ---
+input_folder = "OriginalSrc"         # 📂 Folder containing original images
+output_folder = "DesSrc"             # 📂 Folder to save augmented images
+num_aug_per_image = 10               # Number of augmented images per original
 
-# --- Khởi tạo augmentations ---
+# --- Initialize augmentation pipeline ---
 augment = Compose([
     ShiftScaleRotate(shift_limit=0.01, scale_limit=0.02, rotate_limit=2, p=1.0),
     RandomBrightnessContrast(brightness_limit=0.05, contrast_limit=0.05, p=0.1),
-    # OneOf([
-    #     Blur(blur_limit=1),
-    #     GaussNoise(var_limit=(0, 1))
-    # ], p=0.2)
 ])
 
-# --- Tạo thư mục output ---
+# --- Create output directory if not exists ---
 os.makedirs(output_folder, exist_ok=True)
 
-# --- Lấy danh sách ảnh ---
+# --- Get list of valid images ---
 valid_ext = (".jpg", ".jpeg", ".png", ".bmp")
 image_files = [f for f in os.listdir(input_folder) if f.lower().endswith(valid_ext)]
 
 if not image_files:
-    raise ValueError(f"Không tìm thấy ảnh hợp lệ trong thư mục: {input_folder}")
+    raise ValueError(f"No valid images found in folder: {input_folder}")
 
-# --- Xử lý từng ảnh ---
+# --- Process each image ---
 for filename in image_files:
     img_path = os.path.join(input_folder, filename)
     img = cv2.imread(img_path)
     if img is None:
-        print(f"⚠️  Bỏ qua: {filename} (không đọc được)")
+        print(f"⚠️ Skipping: {filename} (could not read file)")
         continue
 
     base_name, ext = os.path.splitext(filename)
@@ -72,6 +69,6 @@ for filename in image_files:
         save_path = os.path.join(output_folder, save_name)
         cv2.imwrite(save_path, aug)
 
-    print(f"✅ {filename}: đã tạo {num_aug_per_image} ảnh mới.")
+    print(f"✅ {filename}: generated {num_aug_per_image} new augmented images.")
 
-print(f"\n🎉 Hoàn tất! Tất cả ảnh đã lưu trong thư mục '{output_folder}'.")
+print(f"\n🎉 All done! Augmented images are saved in '{output_folder}'.")
