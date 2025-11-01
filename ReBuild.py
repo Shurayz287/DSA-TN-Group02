@@ -12,9 +12,11 @@ import timm
 import hashlib
 from simhash import Simhash
 
+import evaluate
+
 # Config
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-IMAGE_FOLDER = Path("D:/VSCODE/Python/DSA-TN-Group02/DesSrc")
+IMAGE_FOLDER = Path("DesSrc")
 
 # Workflow
 def get_model():
@@ -225,12 +227,16 @@ def main(image_folder, method = "faiss"):
 
     groups = []
     representatives = []
+    all_processed_files= [] 
+
     if method == "faiss":
         embeddings, valid_files = extract_embeddings_cv2(unique_images, batch_size=32)
         print(f"Number of valid images: {len(valid_files)}")
         groups, representatives = faiss_group_duplicate(embeddings, valid_files, distance_threshold=0.6, k_neighbors=10)
+        all_processed_files = valid_files
     elif method == "simhash":
-        groups, representatives = simhash_group_duplicate(unique_images, threshold=22)
+        groups, representatives = simhash_group_duplicate(unique_images, threshold=16) 
+        all_processed_files = unique_images
 
 
     print(f"Numbers of nearly duplicate groups: {len(groups)}")
@@ -247,7 +253,18 @@ def main(image_folder, method = "faiss"):
         cv2.imwrite(str(output_folder / f.name), img)
 
     print(f"\nCleaned folder: {output_folder}")
+
+    # Evaluation
+    if all_processed_files:
+        metrics = evaluate.calculate_metrics(groups, all_processed_files)
+        print("\n--- Evaluation ---")
+        print(f"Precision: {metrics['precision']:.2f}")
+        print(f"Recall:    {metrics['recall']:.2f}")
+        print(f"F1-Score:  {metrics['f1_score']:.2f}")
+    else:
+        print("\nKhông thể đánh giá vì không có file nào được xử lý.")
+
     return groups, representatives
 # Running pipline
 if __name__ == "__main__":
-    groups, representatives = main(IMAGE_FOLDER, method ="faiss")
+    groups, representatives = main(IMAGE_FOLDER, method ="simhash")
