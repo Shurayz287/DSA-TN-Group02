@@ -1,0 +1,13 @@
+# Thư mục cache của Python
+__pycache__/
+
+# Thư mục cache của VSCode (nếu có)
+.vscode/
+
+# Thư mục ảo của Python (nếu bạn dùng)
+venv/
+.venv/
+
+# Các file của hệ điều hành
+.DS_Store
+Thumbs.db

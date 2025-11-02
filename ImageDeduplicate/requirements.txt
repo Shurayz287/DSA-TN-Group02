@@ -1,0 +1,21 @@
+# --- Deep Learning & FAISS ---
+torch
+torchvision
+timm
+faiss-cpu
+
+# --- Hashing Libraries ---
+simhash
+datasketch
+
+# --- Image & Data Handling ---
+numpy
+opencv-python-headless
+Pillow
+scipy
+pandas
+
+# --- Utilities ---
+tqdm
+colorama
+psutil
