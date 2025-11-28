@@ -1,10 +1,181 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="vi">
 <head>
-    <title>Trang của tôi</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Image Deduplication — Demo</title>
+  <meta name="description" content="Trang demo cho công cụ Image Deduplication" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine for small reactivity -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- AOS for scroll animation -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <!-- Plotly for interactive t-SNE -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    /* small cosmetic tweaks */
+    .glass { background: rgba(255,255,255,0.6); backdrop-filter: blur(6px); }
+  </style>
 </head>
-<body>
-    <h1>Xin chào! Đây là GitHub Pages của tôi</h1>
-    <p>Trang đang hoạt động!</p>
+<body class="bg-gradient-to-br from-slate-900 to-indigo-900 text-slate-800 min-h-screen">
+  <script>document.addEventListener('alpine:init', ()=> AOS.init());</script>
+
+  <header class="py-8 px-6">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center text-white text-lg font-bold">ID</div>
+        <div>
+          <h1 class="text-white text-2xl font-extrabold">Image Deduplication</h1>
+          <p class="text-slate-300 text-sm">Visualize & clean image datasets — demo UI</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a class="inline-block px-4 py-2 bg-indigo-500 text-white rounded-lg shadow hover:scale-105 transition" href="#get-started">Bắt đầu</a>
+        <a class="inline-block px-4 py-2 border border-white/10 text-white rounded-lg" href="https://github.com/your-repo" target="_blank">Mở repo</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 pb-24" x-data="app()">
+
+    <!-- Control panel -->
+    <section id="get-started" class="grid md:grid-cols-2 gap-6 items-start">
+      <div class="glass p-6 rounded-2xl shadow-xl" data-aos="fade-right">
+        <h2 class="text-xl font-semibold mb-2">1) Chỉ định tập ảnh</h2>
+        <p class="text-slate-600 mb-4">Bạn có thể nhập đường dẫn tới folder (Google Drive public link) hoặc bấm <strong>Mở Colab</strong> để chạy xử lý trên Colab/Local.</p>
+
+        <label class="block text-sm text-slate-700">Đường dẫn tới folder (Drive hoặc HTTP)</label>
+        <input x-model="datasetPath" type="text" placeholder="https://drive.google.com/drive/folders/..." class="mt-2 w-full p-3 rounded-lg border" />
+
+        <div class="mt-4 flex gap-3">
+          <button @click="openColab()" class="px-4 py-2 bg-green-500 text-white rounded-lg">Mở Colab (Run)</button>
+          <button @click="startProcessing()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Gửi yêu cầu xử lý</button>
+          <button @click="showHowTo()" class="px-4 py-2 border rounded-lg">Hướng dẫn nhanh</button>
+        </div>
+
+        <div class="mt-4 text-sm text-slate-500">
+          <p><strong>Lưu ý:</strong> GitHub Pages là static — việc xử lý ảnh cần chạy ở đâu đó (Local/Colab/Server). Bạn có thể dùng Colab (đề xuất) hoặc host một Flask API.</p>
+        </div>
+      </div>
+
+      <div class="glass p-6 rounded-2xl shadow-xl" data-aos="fade-left">
+        <h2 class="text-xl font-semibold mb-2">2) Kết quả vừa xử lý</h2>
+        <p class="text-slate-600 mb-4">Sau khi xử lý xong, trang sẽ cố gắng tải kết quả từ endpoint bạn cấu hình (ví dụ: <code>/results.json</code>).</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="p-4 rounded-lg border">
+            <h3 class="text-sm font-medium">t-SNE 2D</h3>
+            <div id="tsne-plot" class="w-full h-64 mt-2"></div>
+          </div>
+
+          <div class="p-4 rounded-lg border">
+            <h3 class="text-sm font-medium">Hiệu suất</h3>
+            <div class="mt-2 space-y-2">
+              <div>Thời gian xử lý: <strong x-text="metrics.time || '—'"></strong></div>
+              <div>Số ảnh input: <strong x-text="metrics.input_count || '—'"></strong></div>
+              <div>Số ảnh giữ lại: <strong x-text="metrics.output_count || '—'"></strong></div>
+              <div>Duplicates removed: <strong x-text="metrics.removed || '—'"></strong></div>
+            </div>
+            <div class="mt-3">
+              <button @click="downloadCleaned()" class="px-3 py-1 bg-indigo-600 text-white rounded">Tải bộ ảnh đã lọc</button>
+            </div>
+          </div>
+        </div>
+
+        <h4 class="mt-4 text-sm font-medium">Thumbnails</h4>
+        <div class="mt-2 grid grid-cols-3 sm:grid-cols-6 gap-2" id="thumbs">
+          <!-- thumbnails inserted here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Extra features suggestions -->
+    <section class="mt-10 glass p-6 rounded-2xl shadow-xl" data-aos="fade-up">
+      <h2 class="text-lg font-semibold mb-3">Tính năng gợi ý để mở rộng</h2>
+      <ul class="list-disc pl-5 text-slate-700 space-y-2">
+        <li>Tùy chỉnh threshold tương đồng (slider) và live preview thay đổi.</li>
+        <li>So sánh 2 ảnh side-by-side (diff view).</li>
+        <li>Interactive t-SNE (tooltips hiển thị thumbnail & metadata bằng Plotly).</li>
+        <li>Tích hợp Google Drive API / OneDrive để import trực tiếp (OAuth).</li>
+        <li>Sử dụng WebWorker/Thread cho việc hiển thị ảnh lớn để không block UI.</li>
+        <li>Bảo mật: cho phép mã token để truy cập API xử lý private dataset.</li>
+      </ul>
+    </section>
+
+    <!-- Footer / Repo download -->
+    <footer class="mt-10 text-center text-slate-300">
+      <p>Muốn lấy code về local? <a :href="repoZip" class="text-indigo-300 underline">Tải repo ZIP</a> hoặc clone: <code>git clone https://github.com/your-repo.git</code></p>
+    </footer>
+
+  </main>
+
+  <script>
+  function app(){
+    return {
+      datasetPath: '',
+      repoZip: 'https://github.com/your-repo/archive/refs/heads/main.zip',
+      metrics: {},
+
+      openColab(){
+        // open a placeholder notebook - you should replace with your own Colab link
+        const colabUrl = 'https://colab.research.google.com/drive/YOUR_NOTEBOOK_ID';
+        window.open(colabUrl, '_blank');
+      },
+
+      showHowTo(){
+        alert('Hướng dẫn nhanh:\n1) Mở Colab để chạy script processing (cấu hình output JSON + tsne image).\n2) Chia sẻ public link tới folder output hoặc host results.json trên server.\n3) Nhập link vào đây và bấm Gửi.');
+      },
+
+      startProcessing(){
+        alert('UI sẽ yêu cầu hệ thống xử lý bắt đầu — phần xử lý phải được triển khai ở Colab/Local/Server theo hướng dẫn trong repo.');
+        // optionally: POST to your API to kick processing
+        // fetch('https://your-server.example/run', {method:'POST', body: JSON.stringify({path: this.datasetPath})})
+      },
+
+      async fetchResults(){
+        try{
+          // this expects an endpoint that returns JSON with fields: metrics, tsne (array), thumbs (array of image URLs), cleaned_zip
+          const res = await fetch('/results.json', {cache:'no-store'});
+          if(!res.ok) return;
+          const j = await res.json();
+          this.metrics = j.metrics || {};
+
+          // render thumbnails
+          const thumbs = document.getElementById('thumbs'); thumbs.innerHTML = '';
+          (j.thumbs || []).slice(0,36).forEach(src => {
+            const img = document.createElement('img');
+            img.src = src; img.className = 'w-full h-20 object-cover rounded';
+            const wrap = document.createElement('div'); wrap.className = 'overflow-hidden rounded'; wrap.appendChild(img);
+            thumbs.appendChild(wrap);
+          });
+
+          // draw tsne if data present
+          if(j.tsne && j.tsne.length){
+            const data = [{ x: j.tsne.map(p=>p[0]), y: j.tsne.map(p=>p[1]), mode:'markers', type:'scatter', text: (j.meta||[]).map(m=>m.filename || ''), marker:{size:8} }];
+            Plotly.newPlot('tsne-plot', data, {margin:{t:10}});
+          }
+
+          if(j.cleaned_zip) this.repoZip = j.cleaned_zip;
+        }catch(e){console.warn(e)}
+      },
+
+      downloadCleaned(){
+        if(this.repoZip) window.open(this.repoZip, '_blank');
+        else alert('Không có file đã lọc. Hãy chạy processing trước.');
+      },
+
+      init(){
+        // try to fetch results periodically if hosted alongside results
+        setInterval(()=> this.fetchResults(), 5000);
+        this.fetchResults();
+      }
+    }
+  }
+  document.addEventListener('DOMContentLoaded', ()=>{ const root = document.querySelector('[x-data]'); if(root && root.__x) root.__x.$data.init?.(); /* alpine init */ });
+  </script>
+
 </body>
 </html>
