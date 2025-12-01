@@ -175,6 +175,18 @@
     }
   }
   document.addEventListener('DOMContentLoaded', ()=>{ const root = document.querySelector('[x-data]'); if(root && root.__x) root.__x.$data.init?.(); /* alpine init */ });
+  startProcessing(){
+    const link = this.datasetPath?.trim();
+    if(!link) return alert('Vui lòng nhập public Google Drive link hoặc URL trước khi gửi.');
+
+    // Thay USERNAME/REPO bằng repo của bạn
+    const USER = 'USERNAME';
+    const REPO = 'REPO';
+    const title = encodeURIComponent('Process Drive link: ' + link);
+    const body = encodeURIComponent('Xin chào,\n\nVui lòng xử lý public Google Drive link dưới đây (zip hoặc file public):\n\n' + link + '\n\n(Thêm chú thích nếu cần)\n');
+    const url = `https://github.com/${USER}/${REPO}/issues/new?title=${title}&body=${body}`;
+    window.open(url, '_blank');
+  },
   </script>
 
 </body>
