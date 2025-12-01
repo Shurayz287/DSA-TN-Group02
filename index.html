@@ -34,7 +34,7 @@
       </div>
       <div class="flex items-center gap-3">
         <a class="inline-block px-4 py-2 bg-indigo-500 text-white rounded-lg shadow hover:scale-105 transition" href="#get-started">Bắt đầu</a>
-        <a class="inline-block px-4 py-2 border border-white/10 text-white rounded-lg" href="https://github.com/your-repo" target="_blank">Mở repo</a>
+        <a class="inline-block px-4 py-2 border border-white/10 text-white rounded-lg" href="https://github.com/Shurayz287/DSA-TN-Group02" target="_blank">Mở repo</a>
       </div>
     </div>
   </header>
@@ -48,7 +48,7 @@
         <p class="text-slate-600 mb-4">Bạn có thể nhập đường dẫn tới folder (Google Drive public link) hoặc bấm <strong>Mở Colab</strong> để chạy xử lý trên Colab/Local.</p>
 
         <label class="block text-sm text-slate-700">Đường dẫn tới folder (Drive hoặc HTTP)</label>
-        <input x-model="datasetPath" type="text" placeholder="https://drive.google.com/drive/folders/..." class="mt-2 w-full p-3 rounded-lg border" />
+        <input x-model="datasetPath" id="datasetPath" type="text" placeholder="https://drive.google.com/drive/folders/..." class="mt-2 w-full p-3 rounded-lg border" />
 
         <div class="mt-4 flex gap-3">
           <button @click="openColab()" class="px-4 py-2 bg-green-500 text-white rounded-lg">Mở Colab (Run)</button>
@@ -113,26 +113,59 @@
   </main>
 
   <script>
+  // ---------- Configuration: sửa nếu cần ----------
+  const COLAB_NOTEBOOK_DRIVE_ID = '1I6gw_k3XlkK_ly68Rdqv0me1Sk_uFBJt'; 
+  // nếu muốn dùng notebook trên GitHub thay vì Drive, set GITHUB_USER/REPO/PATH và set USE_GITHUB_NOTEBOOK=true
+  const USE_GITHUB_NOTEBOOK = false;
+  const COLAB_GITHUB_USER = 'Shurayz287';
+  const COLAB_GITHUB_REPO = 'DSA-TN-Group02';
+  const COLAB_GITHUB_PATH = 'blob/main/process.ipynb';
+  // ------------------------------------------------
+
+  function openColabWithDrive(driveLink){
+    // pick Drive-hosted notebook (by id) or GitHub-hosted notebook based on config
+    const encoded = encodeURIComponent((driveLink||'').trim());
+    if(USE_GITHUB_NOTEBOOK){
+      const url = `https://colab.research.google.com/github/${COLAB_GITHUB_USER}/${COLAB_GITHUB_REPO}/${COLAB_GITHUB_PATH}?drive=${encoded}`;
+      window.open(url, '_blank');
+    } else {
+      // open Drive-hosted notebook and append drive param
+      const base = `https://colab.research.google.com/drive/${COLAB_NOTEBOOK_DRIVE_ID}`;
+      const url = encoded ? `${base}?drive=${encoded}` : base;
+      window.open(url, '_blank');
+    }
+  }
+
   function app(){
     return {
       datasetPath: '',
-      repoZip: 'https://github.com/Shurayz287/DSA-TN-Group02/image-deduplication-tool.zip',
+      repoZip: 'https://github.com/Shurayz287/DSA-TN-Group02/image-deduplication-tool/archive/refs/heads/main.zip',
       metrics: {},
 
       openColab(){
-        // open a placeholder notebook - you should replace with your own Colab link
-        const colabUrl = 'https://colab.research.google.com/drive/1I6gw_k3XlkK_ly68Rdqv0me1Sk_uFBJt';
-        window.open(colabUrl, '_blank');
+        // if user entered a drive link, pass it; otherwise open notebook directly
+        const link = (this.datasetPath || '').trim();
+        if(link){
+          openColabWithDrive(link);
+        } else {
+          // open notebook without drive param so user can run interactively
+          openColabWithDrive('');
+        }
       },
 
       showHowTo(){
-        alert('Hướng dẫn nhanh:\n1) Mở Colab để chạy script processing (cấu hình output JSON + tsne image).\n2) Chia sẻ public link tới folder output hoặc host results.json trên server.\n3) Nhập link vào đây và bấm Gửi.');
+        alert('Hướng dẫn nhanh:\n1) Nhập public Google Drive link (nên là zip hoặc public folder).\n2) Nhấn "Mở Colab (Run)".\n3) Trong Colab: nhấn Run ở ô đầu (cell tự động mount Drive và chạy pipeline), sau khi xong Colab sẽ lưu kết quả vào Drive của bạn hoặc hiển thị link.');
       },
 
       startProcessing(){
-        alert('UI sẽ yêu cầu hệ thống xử lý bắt đầu — phần xử lý phải được triển khai ở Colab/Local/Server theo hướng dẫn trong repo.');
-        // optionally: POST to your API to kick processing
-        // fetch('https://your-server.example/run', {method:'POST', body: JSON.stringify({path: this.datasetPath})})
+        // minimal behavior: open Colab with provided drive link (keeps page minimal)
+        const link = (this.datasetPath || '').trim();
+        if(!link){
+          alert('Vui lòng nhập public Google Drive link trước khi gửi.');
+          return;
+        }
+        // open colab ready to run with this link
+        openColabWithDrive(link);
       },
 
       async fetchResults(){
@@ -175,18 +208,6 @@
     }
   }
   document.addEventListener('DOMContentLoaded', ()=>{ const root = document.querySelector('[x-data]'); if(root && root.__x) root.__x.$data.init?.(); /* alpine init */ });
-  startProcessing(){
-    const link = this.datasetPath?.trim();
-    if(!link) return alert('Vui lòng nhập public Google Drive link hoặc URL trước khi gửi.');
-
-    // Thay USERNAME/REPO bằng repo của bạn
-    const USER = 'USERNAME';
-    const REPO = 'REPO';
-    const title = encodeURIComponent('Process Drive link: ' + link);
-    const body = encodeURIComponent('Xin chào,\n\nVui lòng xử lý public Google Drive link dưới đây (zip hoặc file public):\n\n' + link + '\n\n(Thêm chú thích nếu cần)\n');
-    const url = `https://github.com/${USER}/${REPO}/issues/new?title=${title}&body=${body}`;
-    window.open(url, '_blank');
-  },
   </script>
 
 </body>
