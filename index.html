@@ -41,7 +41,7 @@
   <section class="max-w-4xl mx-auto text-center py-12 px-6">
     <div class="glass p-8 rounded-3xl">
       <h2 class="text-3xl font-extrabold text-white mb-3">Dọn ảnh trùng — Chỉ vài bước đơn giản</h2>
-      <p class="text-slate-300 mb-8">Công cụ giúp tìm và loại bỏ ảnh trùng lặp trong dataset ảnh của bạn. Chọn một trong các cách dưới đây để bắt đầu:</p>
+      <p class="text-slate-300 mb-8">Công cụ giúp tìm và loại bỏ ảnh trùng lặp trong dataset ảnh của bạn!</p>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
         <!-- Nút 1: Run in Colab -->
@@ -50,7 +50,7 @@
            class="hero-btn bg-gradient-to-r from-green-400 to-emerald-500 text-slate-900 font-semibold px-6 py-5 rounded-xl flex flex-col items-center justify-center">
           <span class="text-2xl mb-2">▶</span>
           <span class="text-lg">Run in Colab</span>
-          <span class="text-sm mt-2 opacity-90">Mở notebook trực tiếp</span>
+          <span class="text-sm mt-2 opacity-90">Mở notebook trực tiếp (Recommend)</span>
         </a>
 
         <!-- Nút 2: Mở repo GitHub -->
@@ -82,10 +82,9 @@
         <ol class="list-decimal pl-5 text-slate-300 space-y-2">
           <li>Chuẩn bị folder ảnh trên Google Drive → <em>Share → Anyone with link</em> (public).</li>
           <li>Nhấn <strong>Run in Colab</strong> để mở notebook trên Google Colab.</li>
-          <li>Trong notebook: chạy tất cả cells, notebook sẽ hỏi link Google Drive của bạn.</li>
-          <li>Dán link folder ảnh khi được hỏi, tool sẽ tự động xử lý và trả kết quả.</li>
+          <li>Trong notebook: chạy tất cả cells, notebook sẽ hỏi đường dẫn tới folder chứa ảnh trong Google Drive của bạn.</li>
+          <li>Hãy nhớ là đường dẫn này là đường dẫn từ trong folder MyDrive của bạn nhé!</li>
         </ol>
-        <p class="text-sm text-slate-400 mt-3">Gợi ý: nếu share folder không tải được, nén folder thành zip rồi share file zip public (ổn định hơn).</p>
       </div>
 
       <div class="glass p-6 rounded-2xl shadow-xl" data-aos="fade-left">
@@ -95,7 +94,7 @@
           <li>Trích xuất <strong>embedding</strong> cho mỗi ảnh (mô hình CNN / feature extractor).</li>
           <li>Tính toán khoảng cách / cosine similarity để <strong>nhóm</strong> ảnh gần nhau (duplicates).</li>
           <li>Sinh ảnh minh hoạ <strong>t-SNE 2D</strong> để visualize các nhóm và trùng lặp.</li>
-          <li>Xuất folder ảnh đã <em>clean</em> (bỏ duplicates theo logic bạn chọn) và file ZIP.</li>
+          <li>Xuất folder ảnh đã <em>clean</em> (bỏ duplicates theo logic bạn chọn) vào cùng folder chứa ảnh cần xử lý.</li>
         </ul>
         <p class="text-sm text-slate-400 mt-3">Notebook đã được chuẩn bị sẵn, chỉ cần mở và chạy. Tất cả dependencies sẽ được tự động cài đặt.</p>
       </div>
