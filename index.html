@@ -13,11 +13,8 @@
   <!-- AOS for scroll animation -->
   <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
   <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
-  <!-- Plotly for interactive t-SNE -->
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
   <style>
-    /* small cosmetic tweaks */
     .glass { background: rgba(255,255,255,0.06); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.06); }
     .hero-btn { box-shadow: 0 8px 24px rgba(20, 40, 80, 0.35); transform: translateY(0); transition: transform .15s ease, box-shadow .15s ease; }
     .hero-btn:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(20, 40, 80, 0.45); }
@@ -35,47 +32,58 @@
           <p class="text-slate-300 text-sm">Visualize & clean image datasets — demo UI</p>
         </div>
       </div>
-      <div class="flex items-center gap-3">
-        <a class="inline-block px-4 py-2 bg-indigo-500 text-white rounded-lg shadow hover:scale-105 transition" href="#get-started">Bắt đầu</a>
-        <a class="inline-block px-4 py-2 border border-white/10 text-white rounded-lg" href="https://github.com/Shurayz287/DSA-TN-Group02" target="_blank">Mở repo</a>
-      </div>
+      <a class="inline-block px-4 py-2 border border-white/10 text-white rounded-lg hover:bg-white/5 transition" 
+         href="https://github.com/Shurayz287/DSA-TN-Group02" target="_blank">Mở repo</a>
     </div>
   </header>
 
-  <!-- HERO: big CTA + small input -->
+  <!-- HERO: 3 nút chính -->
   <section class="max-w-4xl mx-auto text-center py-12 px-6">
     <div class="glass p-8 rounded-3xl">
       <h2 class="text-3xl font-extrabold text-white mb-3">Dọn ảnh trùng — Chỉ vài bước đơn giản</h2>
-      <p class="text-slate-300 mb-6">Dán link Google Drive chứa folder ảnh (public), nhấn <strong>Run in Colab</strong> để mở notebook đã chuẩn bị sẵn — notebook sẽ mount Drive của bạn, xử lý và trả về kết quả.</p>
+      <p class="text-slate-300 mb-8">Công cụ giúp tìm và loại bỏ ảnh trùng lặp trong dataset ảnh của bạn. Chọn một trong các cách dưới đây để bắt đầu:</p>
 
-      <div class="max-w-2xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
-        <input x-model="datasetPath" id="heroDataset" type="text" placeholder="https://drive.google.com/drive/folders/..." class="col-span-2 p-3 rounded-lg bg-white/5 border border-white/6 text-white placeholder:text-slate-300" />
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+        <!-- Nút 1: Run in Colab -->
+        <a href="https://colab.research.google.com/drive/1qnNAR6L04_aJmjJ4-KL6pFaq2hTB2kfY" 
+           target="_blank"
+           class="hero-btn bg-gradient-to-r from-green-400 to-emerald-500 text-slate-900 font-semibold px-6 py-5 rounded-xl flex flex-col items-center justify-center">
+          <span class="text-2xl mb-2">▶</span>
+          <span class="text-lg">Run in Colab</span>
+          <span class="text-sm mt-2 opacity-90">Mở notebook trực tiếp</span>
+        </a>
 
-        <button @click="openColab()" class="hero-btn col-span-1 bg-gradient-to-r from-green-400 to-emerald-500 text-slate-900 font-semibold px-6 py-3 rounded-xl">
-          ▶ Run in Colab
-        </button>
-      </div>
+        <!-- Nút 2: Mở repo GitHub -->
+        <a href="https://github.com/Shurayz287/DSA-TN-Group02" 
+           target="_blank"
+           class="hero-btn bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-6 py-5 rounded-xl flex flex-col items-center justify-center">
+          <span class="text-2xl mb-2">📂</span>
+          <span class="text-lg">Mở Repository</span>
+          <span class="text-sm mt-2 opacity-90">Xem code trên GitHub</span>
+        </a>
 
-      <div class="mt-6 flex justify-center gap-3">
-        <!-- Download notebook (raw) -->
-        <a :href="notebookRaw" class="px-4 py-2 bg-slate-800/60 border border-slate-700 rounded-md text-slate-200 hover:bg-slate-800" download>⬇️ Tải notebook (.ipynb)</a>
-
-        <!-- Download repo ZIP -->
-        <a :href="repoZip" class="px-4 py-2 bg-slate-800/60 border border-slate-700 rounded-md text-slate-200 hover:bg-slate-800">📦 Tải repo ZIP</a>
+        <!-- Nút 3: Tải về local -->
+        <a href="https://github.com/Shurayz287/DSA-TN-Group02/archive/refs/heads/main.zip" 
+           class="hero-btn bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold px-6 py-5 rounded-xl flex flex-col items-center justify-center">
+          <span class="text-2xl mb-2">📦</span>
+          <span class="text-lg">Tải về Local</span>
+          <span class="text-sm mt-2 opacity-90">Download ZIP để dùng offline</span>
+        </a>
       </div>
     </div>
   </section>
 
-  <main class="max-w-6xl mx-auto px-6 pb-24" x-data="app()" id="get-started">
+  <main class="max-w-6xl mx-auto px-6 pb-24" id="get-started">
 
     <!-- Control panel -->
-    <section class="grid md:grid-cols-2 gap-6 items-start">
+    <section class="grid md:grid-cols-2 gap-6 items-start mb-12">
       <div class="glass p-6 rounded-2xl shadow-xl" data-aos="fade-right">
         <h3 class="text-xl font-semibold mb-2">Cách dùng nhanh</h3>
         <ol class="list-decimal pl-5 text-slate-300 space-y-2">
-          <li>Chuẩn bị folder ảnh → <em>Share → Anyone with link</em> (public).</li>
-          <li>Copy link folder vào ô trên (hoặc click Run in Colab rồi dán trong notebook).</li>
-          <li>Mở Colab rồi bấm <strong>Run</strong> (hoặc Run all). Notebook sẽ mount Drive, tải dữ liệu, xử lý và upload kết quả vào Drive của bạn.</li>
+          <li>Chuẩn bị folder ảnh trên Google Drive → <em>Share → Anyone with link</em> (public).</li>
+          <li>Nhấn <strong>Run in Colab</strong> để mở notebook trên Google Colab.</li>
+          <li>Trong notebook: chạy tất cả cells, notebook sẽ hỏi link Google Drive của bạn.</li>
+          <li>Dán link folder ảnh khi được hỏi, tool sẽ tự động xử lý và trả kết quả.</li>
         </ol>
         <p class="text-sm text-slate-400 mt-3">Gợi ý: nếu share folder không tải được, nén folder thành zip rồi share file zip public (ổn định hơn).</p>
       </div>
@@ -89,133 +97,65 @@
           <li>Sinh ảnh minh hoạ <strong>t-SNE 2D</strong> để visualize các nhóm và trùng lặp.</li>
           <li>Xuất folder ảnh đã <em>clean</em> (bỏ duplicates theo logic bạn chọn) và file ZIP.</li>
         </ul>
-        <p class="text-sm text-slate-400 mt-3">Trong notebook đã đặt sẵn: cell đầu sẽ đọc `?drive=...` (nếu có), mount Drive và dùng biến <code>drive_link</code> để tải folder. Mình đã chuẩn hoá cell đó cho bạn (xem hướng dẫn ở dưới).</p>
+        <p class="text-sm text-slate-400 mt-3">Notebook đã được chuẩn bị sẵn, chỉ cần mở và chạy. Tất cả dependencies sẽ được tự động cài đặt.</p>
       </div>
     </section>
 
-    <!-- Results quick preview -->
-    <section class="mt-8 glass p-6 rounded-2xl shadow-xl" data-aos="fade-up">
-      <h3 class="text-lg font-semibold mb-3">Kết quả demo (tự động cập nhật nếu /results.json tồn tại)</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="p-3 border rounded text-center">
-          <div class="text-sm text-slate-400">Thời gian xử lý</div>
-          <div class="text-xl font-semibold" x-text="metrics.time || '—'"></div>
+    <!-- Features -->
+    <section class="glass p-6 rounded-2xl shadow-xl mb-12" data-aos="fade-up">
+      <h3 class="text-xl font-semibold mb-4">Tính năng chính</h3>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="p-4 border border-white/10 rounded-lg">
+          <div class="text-3xl mb-2">🖼️</div>
+          <h4 class="font-semibold mb-2">Xử lý ảnh thông minh</h4>
+          <p class="text-slate-300 text-sm">Phát hiện ảnh trùng lặp dựa trên nội dung, không chỉ dựa trên tên file hay metadata.</p>
         </div>
-        <div class="p-3 border rounded text-center">
-          <div class="text-sm text-slate-400">Ảnh input</div>
-          <div class="text-xl font-semibold" x-text="metrics.input_count || '—'"></div>
+        <div class="p-4 border border-white/10 rounded-lg">
+          <div class="text-3xl mb-2">📊</div>
+          <h4 class="font-semibold mb-2">Visualization</h4>
+          <p class="text-slate-300 text-sm">Hiển thị trực quan các nhóm ảnh trùng lặp qua biểu đồ t-SNE 2D.</p>
         </div>
-        <div class="p-3 border rounded text-center">
-          <div class="text-sm text-slate-400">Ảnh giữ lại</div>
-          <div class="text-xl font-semibold" x-text="metrics.output_count || '—'"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Thumbnails / TSNE -->
-    <section class="mt-6 grid md:grid-cols-2 gap-6">
-      <div class="glass p-4 rounded-2xl" data-aos="fade-up">
-        <h4 class="font-semibold mb-2">t-SNE 2D</h4>
-        <div id="tsne-plot" class="w-full h-64 bg-black/10 rounded"></div>
-      </div>
-
-      <div class="glass p-4 rounded-2xl" data-aos="fade-up">
-        <h4 class="font-semibold mb-2">Ví dụ thumbnails</h4>
-        <div id="thumbs" class="grid grid-cols-3 gap-2">
-          <!-- thumbnails will be injected -->
+        <div class="p-4 border border-white/10 rounded-lg">
+          <div class="text-3xl mb-2">⚡</div>
+          <h4 class="font-semibold mb-2">Dễ sử dụng</h4>
+          <p class="text-slate-300 text-sm">Chạy trực tiếp trên Google Colab, không cần cài đặt phức tạp. Hỗ trợ GPU miễn phí.</p>
         </div>
       </div>
     </section>
 
-    <!-- Footer / Repo download -->
-    <footer class="mt-10 text-center text-slate-300">
-      <p>Muốn lấy code về local? <a :href="repoZip" class="text-indigo-300 underline">Tải repo ZIP</a> hoặc clone:
-        <code class="block mt-2">git clone https://github.com/Shurayz287/DSA-TN-Group02.git</code>
-      </p>
-    </footer>
+    <!-- CTA -->
+    <section class="text-center" data-aos="fade-up">
+      <h3 class="text-2xl font-semibold mb-4">Sẵn sàng để thử?</h3>
+      <p class="text-slate-300 mb-6 max-w-2xl mx-auto">Nhấn vào nút <strong>Run in Colab</strong> để bắt đầu sử dụng công cụ ngay lập tức. Hoàn toàn miễn phí và chạy trên cloud của Google.</p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="https://colab.research.google.com/drive/1qnNAR6L04_aJmjJ4-KL6pFaq2hTB2kfY" 
+           target="_blank"
+           class="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-green-400 to-emerald-500 text-slate-900 font-semibold rounded-xl hover:shadow-xl transition">
+          <span class="mr-2">▶</span> Run in Colab
+        </a>
+        <a href="https://github.com/Shurayz287/DSA-TN-Group02/archive/refs/heads/main.zip" 
+           class="inline-flex items-center justify-center px-8 py-3 bg-white/10 text-white font-semibold rounded-xl border border-white/20 hover:bg-white/15 transition">
+          <span class="mr-2">📦</span> Tải về Local
+        </a>
+      </div>
+    </section>
 
   </main>
 
+  <footer class="py-8 border-t border-white/10">
+    <div class="max-w-6xl mx-auto px-6 text-center text-slate-300">
+      <p class="mb-4">Muốn lấy code về local? Tải repo ZIP hoặc clone:</p>
+      <code class="block bg-slate-800/50 p-3 rounded-lg mb-6 text-sm">git clone https://github.com/Shurayz287/DSA-TN-Group02.git</code>
+      <p class="text-sm">© 2023 Image Deduplication Tool. Demo UI cho đề tài DSA.</p>
+    </div>
+  </footer>
+
   <script>
-  // ---------- Configuration: sửa nếu cần ----------
-  const COLAB_NOTEBOOK_DRIVE_ID = '1qnNAR6L04_aJmjJ4-KL6pFaq2hTB2kfY'; 
-  const USE_GITHUB_NOTEBOOK = false;
-  const COLAB_GITHUB_USER = 'Shurayz287';
-  const COLAB_GITHUB_REPO = 'DSA-TN-Group02';
-  const COLAB_GITHUB_PATH = 'main/process.ipynb';
-  const GITHUB_RAW_NOTEBOOK = `https://raw.githubusercontent.com/${COLAB_GITHUB_USER}/${COLAB_GITHUB_REPO}/main/process.ipynb`;
-  const REPO_ZIP = `https://github.com/${COLAB_GITHUB_USER}/${COLAB_GITHUB_REPO}/archive/refs/heads/main.zip`;
-  // ------------------------------------------------
-
-  function openColabWithDrive(driveLink){
-    const encoded = encodeURIComponent((driveLink||'').trim());
-    if(USE_GITHUB_NOTEBOOK){
-      const url = `https://colab.research.google.com/github/${COLAB_GITHUB_USER}/${COLAB_GITHUB_REPO}/${COLAB_GITHUB_PATH}?drive=${encoded}`;
-      window.open(url, '_blank');
-    } else {
-      const base = `https://colab.research.google.com/drive/${COLAB_NOTEBOOK_DRIVE_ID}`;
-      const url = encoded ? `${base}?drive=${encoded}` : base;
-      window.open(url, '_blank');
-    }
-  }
-
-  function app(){
-    return {
-      datasetPath: '',
-      repoZip: REPO_ZIP,
-      notebookRaw: GITHUB_RAW_NOTEBOOK,
-      metrics: {},
-
-      openColab(){
-        const link = (this.datasetPath || '').trim();
-        openColabWithDrive(link);
-      },
-
-      showHowTo(){
-        alert('Hướng dẫn nhanh:\\n1) Nhập public Google Drive link (folder) hoặc để trống.\\n2) Nhấn Run in Colab.\\n3) Trong Colab: Run cell đầu để mount Drive và bắt đầu xử lý.');
-      },
-
-      startProcessing(){
-        const link = (this.datasetPath || '').trim();
-        if(!link){
-          if(!confirm('Bạn chưa nhập link. Mở Colab trống?')) return;
-        }
-        openColabWithDrive(link);
-      },
-
-      async fetchResults(){
-        try{
-          const res = await fetch('/results.json', {cache:'no-store'});
-          if(!res.ok) return;
-          const j = await res.json();
-          this.metrics = j.metrics || {};
-          // thumbnails
-          const thumbsEl = document.getElementById('thumbs'); thumbsEl.innerHTML='';
-          (j.thumbs || []).slice(0,12).forEach(s=>{
-            const img = document.createElement('img'); img.src=s; img.className='w-full h-20 object-cover rounded';
-            thumbsEl.appendChild(img);
-          });
-          // tsne
-          if(j.tsne && j.tsne.length){
-            const data = [{ x: j.tsne.map(p=>p[0]), y: j.tsne.map(p=>p[1]), mode:'markers', type:'scatter', text: (j.meta||[]).map(m=>m.filename || ''), marker:{size:8} }];
-            Plotly.newPlot('tsne-plot', data, {margin:{t:6}});
-          }
-        }catch(e){console.warn(e)}
-      },
-
-      downloadCleaned(){
-        if(this.repoZip) window.open(this.repoZip, '_blank');
-        else alert('Không có file đã lọc. Hãy chạy processing trước.');
-      },
-
-      init(){
-        setInterval(()=> this.fetchResults(), 7000);
-        this.fetchResults();
-      }
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', ()=>{ const root = document.querySelector('[x-data]'); if(root && root.__x) root.__x.$data.init?.(); });
+  // Simple script for handling any dynamic behavior if needed
+  document.addEventListener('DOMContentLoaded', function() {
+    // Add any simple interactive behaviors here if needed
+    console.log('Image Deduplication demo page loaded');
+  });
   </script>
 
 </body>
