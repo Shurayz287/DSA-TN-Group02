@@ -52,7 +52,7 @@ Hệ thống cung cấp các chỉ số đánh giá:
 - **Thời gian xử lý & Sử dụng bộ nhớ**
 
 ## 🌐 Demo trực tuyến
-Truy cập [https://dsa-tn-group02.github.io/](https://dsa-tn-group02.github.io/) để xem:
+Truy cập [https://shurayz287.github.io/DSA-TN-Group02/](https://shurayz287.github.io/DSA-TN-Group02/) để xem:
 - Giới thiệu chi tiết về dự án
 - Demo trực quan về quy trình xử lý
 - Kết quả thử nghiệm và đánh giá
