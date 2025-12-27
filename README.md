@@ -26,6 +26,9 @@ Hệ thống sử dụng kết hợp đa tầng để phát hiện ảnh trùng 
 ## 📂 Cấu trúc dự án
 ```
 DSA-TN-Group02/
+├── research             # Folder chứa document
+    ├── Image_deduplication.pdf                # doc
+    ├── code.ipynb       # code
 ├── tool             # Folder chứa tool
     ├── img                                    # Folder chứa ảnh
     ├── image-deduplication-detection.ipynb    # Code
