@@ -1,0 +1,13 @@
+# requirements.txt 
+Pillow
+opencv-python
+numpy
+torch
+torchvision
+faiss-cpu
+tqdm
+timm
+colorama
+psutil
+matplotlib
+scikit-learn
