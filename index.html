@@ -37,14 +37,15 @@
     </div>
   </header>
 
-  <!-- HERO: 3 nút chính -->
+  <!-- HERO: 5 nút chính (Run in Colab, Mở Repository, Tải về, Research, Web) -->
   <section class="max-w-4xl mx-auto text-center py-12 px-6">
     <div class="glass p-8 rounded-3xl">
       <h2 class="text-3xl font-extrabold text-white mb-3">Dọn ảnh trùng — Chỉ vài bước đơn giản</h2>
       <p class="text-slate-300 mb-8">Công cụ giúp tìm và loại bỏ ảnh trùng lặp trong dataset ảnh của bạn!</p>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-        <!-- Nút 1: Run in Colab -->
+      <!-- Row: main 3 big buttons -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mb-6">
+        <!-- Button 1 -->
         <a href="https://colab.research.google.com/drive/1qnNAR6L04_aJmjJ4-KL6pFaq2hTB2kfY" 
            target="_blank"
            class="hero-btn bg-gradient-to-r from-green-400 to-emerald-500 text-slate-900 font-semibold px-6 py-5 rounded-xl flex flex-col items-center justify-center">
@@ -53,7 +54,7 @@
           <span class="text-sm mt-2 opacity-90">Mở notebook trực tiếp (Recommend)</span>
         </a>
 
-        <!-- Nút 2: Mở repo GitHub -->
+        <!-- Button 2 -->
         <a href="https://github.com/Shurayz287/DSA-TN-Group02" 
            target="_blank"
            class="hero-btn bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold px-6 py-5 rounded-xl flex flex-col items-center justify-center">
@@ -62,7 +63,7 @@
           <span class="text-sm mt-2 opacity-90">Xem code trên GitHub</span>
         </a>
 
-        <!-- Nút 3: Tải về local -->
+        <!-- Button 3 -->
         <a href="https://github.com/Shurayz287/DSA-TN-Group02/archive/refs/heads/main.zip" 
            class="hero-btn bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold px-6 py-5 rounded-xl flex flex-col items-center justify-center">
           <span class="text-2xl mb-2">📦</span>
@@ -70,6 +71,27 @@
           <span class="text-sm mt-2 opacity-90">Download ZIP để dùng offline</span>
         </a>
       </div>
+
+      <!-- Row: Research & Web as large buttons (same visual style) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-2">
+        <!-- Research button -->
+        <a href="https://github.com/Shurayz287/DSA-TN-Group02/blob/main/research/Image_deduplication.pdf" id="btn-research" target="_blank"
+           class="hero-btn bg-gradient-to-r from-sky-500 to-cyan-500 text-slate-900 font-semibold px-6 py-5 rounded-xl flex flex-col items-center justify-center">
+          <span class="text-2xl mb-2">📚</span>
+          <span class="text-lg">Research</span>
+          <span class="text-sm mt-2 opacity-90">Papers & Notebooks</span>
+        </a>
+
+        <!-- Web button -->
+        <a href="" id="btn-web" target="_blank"
+           class="hero-btn bg-gradient-to-r from-fuchsia-500 to-pink-500 text-slate-900 font-semibold px-6 py-5 rounded-xl flex flex-col items-center justify-center">
+          <span class="text-2xl mb-2">🌐</span>
+          <span class="text-lg">Web</span>
+          <span class="text-sm mt-2 opacity-90">Demo & Documentation — thay link vào sau</span>
+        </a>
+      </div>
+
+      <p class="text-xs text-slate-400 mt-4 max-w-2xl mx-auto">5 nút trên cho phép bạn chạy notebook, xem mã nguồn, tải mã về, tham khảo tài liệu nghiên cứu, và xem demo/documentation trực tuyến.</p>
     </div>
   </section>
 
@@ -100,41 +122,63 @@
       </div>
     </section>
 
-    <!-- Features -->
+    <!-- Features (now 5) -->
     <section class="glass p-6 rounded-2xl shadow-xl mb-12" data-aos="fade-up">
       <h3 class="text-xl font-semibold mb-4">Tính năng chính</h3>
-      <div class="grid md:grid-cols-3 gap-6">
-        <div class="p-4 border border-white/10 rounded-lg">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+        <div class="p-4 border border-white/10 rounded-lg text-center">
           <div class="text-3xl mb-2">🖼️</div>
           <h4 class="font-semibold mb-2">Xử lý ảnh thông minh</h4>
-          <p class="text-slate-300 text-sm">Phát hiện ảnh trùng lặp dựa trên nội dung, không chỉ dựa trên tên file hay metadata.</p>
+          <p class="text-slate-300 text-sm">Phát hiện ảnh trùng lặp dựa trên nội dung (content-based), không chỉ name/metadata.</p>
         </div>
-        <div class="p-4 border border-white/10 rounded-lg">
+
+        <div class="p-4 border border-white/10 rounded-lg text-center">
           <div class="text-3xl mb-2">📊</div>
           <h4 class="font-semibold mb-2">Visualization</h4>
-          <p class="text-slate-300 text-sm">Hiển thị trực quan các nhóm ảnh trùng lặp qua biểu đồ t-SNE 2D.</p>
+          <p class="text-slate-300 text-sm">Minh hoạ clusters/duplicates bằng t-SNE/2D plots để bạn dễ kiểm tra kết quả.</p>
         </div>
-        <div class="p-4 border border-white/10 rounded-lg">
+
+        <div class="p-4 border border-white/10 rounded-lg text-center">
           <div class="text-3xl mb-2">⚡</div>
           <h4 class="font-semibold mb-2">Dễ sử dụng</h4>
-          <p class="text-slate-300 text-sm">Chạy trực tiếp trên Google Colab, không cần cài đặt phức tạp. Hỗ trợ GPU miễn phí.</p>
+          <p class="text-slate-300 text-sm">Chạy trên Colab, không cần cấu hình phức tạp; có notebook hướng dẫn sẵn.</p>
+        </div>
+
+        <div class="p-4 border border-white/10 rounded-lg text-center">
+          <div class="text-3xl mb-2">📚</div>
+          <h4 class="font-semibold mb-2">Research & Resources</h4>
+          <p class="text-slate-300 text-sm">Tập hợp papers, notebooks và tài liệu tham khảo cho triển khai và cải tiến thuật toán.</p>
+        </div>
+
+        <div class="p-4 border border-white/10 rounded-lg text-center">
+          <div class="text-3xl mb-2">🌐</div>
+          <h4 class="font-semibold mb-2">Demos & Docs</h4>
+          <p class="text-slate-300 text-sm">Trang demo, docs và ví dụ triển khai để bạn dễ thử nghiệm hoặc tích hợp vào dự án.</p>
         </div>
       </div>
     </section>
 
-    <!-- CTA -->
+    <!-- CTA (updated: thêm nút "Use tool online") -->
     <section class="text-center" data-aos="fade-up">
       <h3 class="text-2xl font-semibold mb-4">Sẵn sàng để thử?</h3>
-      <p class="text-slate-300 mb-6 max-w-2xl mx-auto">Nhấn vào nút <strong>Run in Colab</strong> để bắt đầu sử dụng công cụ ngay lập tức. Hoàn toàn miễn phí và chạy trên cloud của Google.</p>
+      <p class="text-slate-300 mb-6 max-w-2xl mx-auto">Nhấn vào một trong các nút dưới để bắt đầu: chạy notebook, xem mã nguồn, tải mã, tham khảo tài liệu nghiên cứu, xem demo, hoặc sử dụng công cụ trực tuyến.</p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <a href="https://colab.research.google.com/drive/1qnNAR6L04_aJmjJ4-KL6pFaq2hTB2kfY" 
            target="_blank"
            class="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-green-400 to-emerald-500 text-slate-900 font-semibold rounded-xl hover:shadow-xl transition">
           <span class="mr-2">▶</span> Run in Colab
         </a>
+
         <a href="https://github.com/Shurayz287/DSA-TN-Group02/archive/refs/heads/main.zip" 
            class="inline-flex items-center justify-center px-8 py-3 bg-white/10 text-white font-semibold rounded-xl border border-white/20 hover:bg-white/15 transition">
           <span class="mr-2">📦</span> Tải về Local
+        </a>
+
+        <!-- New button: Use tool online -->
+        <a href="#" id="btn-use-online"
+           class="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-900 font-semibold rounded-xl hover:shadow-xl transition"
+           target="_blank">
+          <span class="mr-2">🌐</span> Use tool online
         </a>
       </div>
     </section>
@@ -152,7 +196,7 @@
   <script>
   // Simple script for handling any dynamic behavior if needed
   document.addEventListener('DOMContentLoaded', function() {
-    // Add any simple interactive behaviors here if needed
+    AOS.init();
     console.log('Image Deduplication demo page loaded');
   });
   </script>
