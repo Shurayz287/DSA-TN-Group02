@@ -195,7 +195,7 @@ python test_installation.py
 
 ## 🚀 Chạy notebook
 
-1. **Tải file `SETUP.ipynb`** vào thư mục project
+1. **Tải file `image-deduplication-detection.ipynb`** vào thư mục project
 2. **Tạo thư mục chứa ảnh**:
    ```bash
    mkdir img
@@ -205,7 +205,7 @@ python test_installation.py
    ```bash
    jupyter notebook
    ```
-4. **Mở file `SETUP.ipynb`** trong Jupyter
+4. **Mở file `image-deduplication-detection.ipynb`** trong Jupyter
 5. **Chạy từng cell** theo thứ tự từ trên xuống
 
 ## ⚠️ Xử lý lỗi thường gặp
